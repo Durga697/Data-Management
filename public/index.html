@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        img { width: 80px; height: auto; border-radius: 5px; }
+        input, button { padding: 10px; margin: 5px; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Data Management Of Products</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="productTable">
+        </tbody>
+    </table>
+
+    <h2>Add New Product</h2>
+    <form id="productForm">
+        <input type="text" id="name" placeholder="Product Name" required>
+        <input type="number" id="price" placeholder="Price" required>
+        <input type="text" id="description" placeholder="Description" required>
+        <input type="text" id="imageUrl" placeholder="Image URL" required>
+        <button type="submit">Add Product</button>
+    </form>
+
+    <script>
+        async function fetchProducts() {
+            try {
+                const response = await fetch('/products');
+                const products = await response.json();
+                const tableBody = document.getElementById('productTable');
+                tableBody.innerHTML = '';
+
+                products.forEach(product => {
+                    let row = `<tr>
+                        <td>${product._id}</td>
+                        <td>${product.name}</td>
+                        <td>$${product.price}</td>
+                        <td>${product.description}</td>
+                        <td><img src="${product.imageUrl}" alt="${product.name}"></td>
+                        <td>
+                            <button onclick="deleteProduct('${product._id}')">Delete</button>
+                            <button onclick="updateProduct('${product._id}', '${product.name}', '${product.price}', '${product.description}', '${product.imageUrl}')">Edit</button>
+                        </td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                await fetch(`/products/${id}`, { method: 'DELETE' });
+                fetchProducts();
+            }
+        }
+
+        async function updateProduct(id, name, price, description, imageUrl) {
+            const newName = prompt('Enter new name:', name);
+            const newPrice = prompt('Enter new price:', price);
+            const newDescription = prompt('Enter new description:', description);
+            const newImageUrl = prompt('Enter new Image URL:', imageUrl);
+
+            if (newName && newPrice && newDescription && newImageUrl) {
+                await fetch(`/products/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: newName,
+                        price: parseFloat(newPrice),
+                        description: newDescription,
+                        imageUrl: newImageUrl
+                    })
+                });
+                fetchProducts();
+            }
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const price = document.getElementById('price').value;
+            const description = document.getElementById('description').value;
+            const imageUrl = document.getElementById('imageUrl').value;
+
+            await fetch('/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, price, description, imageUrl })
+            });
+
+            document.getElementById('productForm').reset();
+            fetchProducts();
+        });
+
+        fetchProducts();
+    </script>
+
+</body>
+</html>
